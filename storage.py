@@ -1,3 +1,4 @@
+#storage.py
 from __future__ import annotations
 
 import json
@@ -18,11 +19,17 @@ class JsonTaskStorage:
 
     def load(self) -> List[Task]:
         if not self.file_path.exists():
+            # первый запуск: создаём пустое хранилище
+            try:
+                self.file_path.write_text("[]", encoding="utf-8")
+            except OSError as e:
+                raise StorageError("Не удалось создать tasks.json.") from e
             return []
 
         try:
             raw = self.file_path.read_text(encoding="utf-8").strip()
             if not raw:
+                # файл есть, но пустой — считаем пустым списком
                 return []
 
             data = json.loads(raw)
@@ -52,11 +59,12 @@ class JsonTaskStorage:
         except (TypeError, ValueError) as e:
             raise StorageError("Некорректные данные в tasks.json.") from e
 
+
     def save(self, tasks: List[Task]) -> None:
         try:
             data = [asdict(t) for t in tasks]
             tmp = self.file_path.with_suffix(".tmp")
             tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-            tmp.replace(self.file_path)  # атомарная замена
+            tmp.replace(self.file_path)
         except OSError as e:
             raise StorageError("Ошибка сохранения tasks.json.") from e

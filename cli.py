@@ -1,5 +1,6 @@
+#cli.py
 from __future__ import annotations
-
+from datetime import datetime
 from typing import Optional
 
 from service import TaskService
@@ -16,36 +17,37 @@ class ConsoleUI:
             choice = input("Выберите действие: ").strip()
 
             try:
-                if choice == "0":
-                    print("👋 До встречи!")
-                    return
+                match choice:
+                    case "0":
+                        print("👋 До встречи!")
+                        return
 
-                elif choice == "1":
-                    title = input("Введите название задачи: ")
-                    task = self.service.add_task(title)
-                    print(f"✅ Добавлено: {task.title}")
+                    case "1":
+                        title = input("Введите название задачи: ")
+                        task = self.service.add_task(title)
+                        print(f"✅ Добавлено: {task.title}")
 
-                elif choice == "2":
-                    task = self._choose_task("удалить")
-                    if task:
-                        deleted = self.service.delete_task(task.id)
-                        print(f"🗑️  Удалено: {deleted.title}")
+                    case "2":
+                        task = self._choose_task("удалить")
+                        if task:
+                            deleted = self.service.delete_task(task.id)
+                            print(f"🗑️  Удалено: {deleted.title}")
 
-                elif choice == "3":
-                    task = self._choose_task("отметить выполненной")
-                    if task:
-                        done = self.service.mark_done(task.id)
-                        if done.done:
-                            print(f"🎉 Выполнено: {done.title}")
+                    case "3":
+                        task = self._choose_task("отметить выполненной")
+                        if task:
+                            done = self.service.mark_done(task.id)
+                            if done.done:
+                                print(f"🎉 Выполнено: {done.title}")
 
-                elif choice == "4":
-                    self._print_tasks()
+                    case "4":
+                        self._print_tasks()
 
-                elif choice == "5":
-                    self._edit_task()
+                    case "5":
+                        self._edit_task()
 
-                else:
-                    print("❌ Неизвестная команда. Введите число из меню (0–5).")
+                    case _:
+                        print("❌ Неизвестная команда. Введите число из меню (0–5).")
 
             except ValueError as e:
                 print(f"❌ {e}")
@@ -55,6 +57,7 @@ class ConsoleUI:
                 print(f"⚠️  {e}")
             except Exception as e:
                 print(f"❌ Непредвиденная ошибка: {e}")
+
 
     def _print_menu(self) -> None:
         print(
@@ -76,7 +79,11 @@ class ConsoleUI:
         print("\nВаши задачи:")
         for i, t in enumerate(tasks, start=1):
             status = "✅" if t.done else "⏳"
-            created = f" (создано: {t.created_at})" if t.created_at else ""
+            created = (
+                f" (создано: {self._format_datetime(t.created_at)})"
+                if t.created_at else ""
+            )
+
             print(f"  {i}) {status} {t.title}{created}")
         print()
 
@@ -115,25 +122,27 @@ class ConsoleUI:
         )
         choice = input("Выберите действие: ").strip()
 
-        if choice == "0":
-            print("↩️  Отменено.")
-            return
-
-        if choice == "1":
-            new_title = input("Введите новое название: ").strip()
-            if not new_title:
-                print("❌ Новое название не может быть пустым.")
+        match choice:
+            case "0":
+                print("↩️  Отменено.")
                 return
-            updated = self.service.update_title(task.id, new_title)
-            print(f"✏️  Обновлено: {updated.title}")
 
-        elif choice == "2":
-            updated = self.service.toggle_done(task.id)
-            state = "выполнена ✅" if updated.done else "не выполнена ⏳"
-            print(f"🔁 Статус изменён: {updated.title} — {state}")
+            case "1":
+                new_title = input("Введите новое название: ").strip()
+                if not new_title:
+                    print("❌ Новое название не может быть пустым.")
+                    return
+                updated = self.service.update_title(task.id, new_title)
+                print(f"✏️  Обновлено: {updated.title}")
 
-        else:
-            print("❌ Неизвестная команда.")
+            case "2":
+                updated = self.service.toggle_done(task.id)
+                state = "выполнена ✅" if updated.done else "не выполнена ⏳"
+                print(f"🔁 Статус изменён: {updated.title} — {state}")
+
+            case _:
+                print("❌ Неизвестная команда.")
+
 
     @staticmethod
     def _read_int(prompt: str, allow_empty: bool = False) -> Optional[int]:
@@ -145,3 +154,15 @@ class ConsoleUI:
         except ValueError:
             print("❌ Ожидалось целое число.")
             return None
+
+    @staticmethod
+    def _format_datetime(value: str) -> str:
+        """
+        Преобразует ISO-дату в удобный формат.
+        Пример: 2026-01-14T18:42:10 -> 14.01.2026 18:42
+        """
+        try:
+            dt = datetime.fromisoformat(value)
+            return dt.strftime("%d.%m.%Y %H:%M")
+        except (ValueError, TypeError):
+            return value

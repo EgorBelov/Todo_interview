@@ -1,3 +1,4 @@
+#service.py
 from __future__ import annotations
 
 import re
@@ -94,7 +95,7 @@ class TaskService:
         """
         Возвращает список (task, score) по убыванию score.
         Учитывает:
-        - точное вхождение подстроки (с бонусом)
+        - точное вхождение подстроки
         - похожесть строк (SequenceMatcher), помогает при опечатках
         """
         q = query.strip().lower()
@@ -108,9 +109,9 @@ class TaskService:
             # базовая похожесть
             score = SequenceMatcher(a=q, b=title).ratio()
 
-            # бонус за подстроку (часть названия)
+            # подстрока (часть названия)
             if q in title:
-                score = max(score, 0.9)  # почти “точное” попадание
+                score = max(score, 0.9)
 
             if score >= cutoff:
                 scored.append((t, score))
